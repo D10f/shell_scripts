@@ -24,7 +24,7 @@ then
 fi
 
 function usage_general() {
-  echo "Usage: ${0} [list | create | delete] [options]..." >&2
+  echo "Usage: ${0} [list | create | delete | up | down | start | stop] [options]..." >&2
   echo "Manage your account with this wrapper for the official SCW CLI tool."
   exit 1
 }
@@ -74,6 +74,22 @@ function usage_delete() {
 }
 
 
+######## UTILITIES ########
+
+
+function get_instance_id_by_state() {
+  local RUNNING_INSTANCES="${CMD_BASE} server list zone=${ACC_ZONE} state=${1}"
+  $RUNNING_INSTANCES | grep -v 'STATE' | awk '{print $1}' | (readarray -t ARRAY; IFS=' ' echo "${ARRAY[*]}")
+}
+
+
+function get_instance_id_by_name() {
+  REGEXP=$(echo ${@} | sed s/' '/\|/g)
+  local RUNNING_INSTANCES="${CMD_BASE} server list zone=${ACC_ZONE}"
+  $RUNNING_INSTANCES | grep -Ei "(${REGEXP})" | awk '{print $1}' | (readarray -t ARRAY; IFS=' ' echo "${ARRAY[*]}")
+}
+
+
 ######## CREATE INSTANCES ########
 
 
@@ -105,7 +121,8 @@ function get_create_arguments() {
 
 
 function check_max_instances() {
-  
+
+  # Create instances as the largest between -n argument and names provided.
   NAMED_INSTANCES="$(( $# - 1 ))"
 
   if [[ "${NAMED_INSTANCES}" -gt "${NEW_INSTANCES}" ]]
@@ -113,13 +130,14 @@ function check_max_instances() {
     NEW_INSTANCES=$NAMED_INSTANCES
   fi
 
-  if [[ "${NEW_INSTANCES}" -eq 0 ]]
+  if [[ "${NEW_INSTANCES}" -le 0 ]]
   then
     echo "You must specify how many instances to create"
     usage_create
     exit 1
   fi
 
+  # Warn if too many instances are specified accidentally to prevent charges
   if [[ "${NEW_INSTANCES}" -gt "${MAX_INSTANCES}" ]]
   then
     echo "CAUTION!"
@@ -152,14 +170,14 @@ function create_instances() {
       CMD="${CMD} name=${1}"
     fi
 
-    $CMD | grep Address
+    $CMD | grep -E '^ID|Hostname|^CommercialType|^Zone|PublicIP\.Address|Image\.Name'
     (( START++ ))
     shift
   done
 }
 
 
-######## STOP INSTANCES ########
+######## STOP INSTANCES BY NAME OR ID ########
 
 
 function get_stop_arguments() {
@@ -179,12 +197,110 @@ function get_stop_arguments() {
   done
 }
 
-
 function stop_instances() {
   get_stop_arguments ${@}
   shift "$(( OPTIND - 1 ))"
 
-  local CMD="${CMD_BASE} server stop ${@} zone=${ACC_ZONE}"
+  if [[ ! "${@}" ]]
+  then
+    echo "You must provide at least one instance name."
+    exit 1
+  fi
+
+  local CMD="${CMD_BASE} server stop $(get_instance_id_by_name ${@}) zone=${ACC_ZONE}"
+  $CMD
+}
+
+
+######## START INSTANCES BY NAME OR ID ########
+
+
+function get_start_arguments() {
+ while getopts vz: OPTION
+  do
+    case ${OPTION} in
+      v)
+        echo "TODO: Enable verbosity"
+        ;;
+      z)
+        ACC_ZONE="${OPTARG}"
+        ;;
+      ?)
+        usage_stop
+        ;;
+    esac
+  done
+}
+
+function start_instances() {
+  get_start_arguments ${@}
+  shift "$(( OPTIND - 1 ))"
+
+  if [[ ! "${@}" ]]
+  then
+    echo "You must provide at least one instance name."
+    exit 1
+  fi
+
+  local CMD="${CMD_BASE} server start $(get_instance_id_by_name ${@}) zone=${ACC_ZONE}"
+  $CMD
+}
+
+
+######## STOP ALL INSTANCES ########
+
+
+function get_down_arguments() {
+ while getopts vz: OPTION
+  do
+    case ${OPTION} in
+      v)
+        echo "TODO: Enable verbosity"
+        ;;
+      z)
+        ACC_ZONE="${OPTARG}"
+        ;;
+      ?)
+        usage_stop
+        ;;
+    esac
+  done
+}
+
+function down_instances() {
+  get_down_arguments ${@}
+  shift "$(( OPTIND - 1 ))"
+
+  local CMD="${CMD_BASE} server stop $(get_instance_id_by_state running) zone=${ACC_ZONE}"
+  $CMD
+}
+
+
+######## STARTS ALL INSTANCES ########
+
+
+function get_up_arguments() {
+ while getopts vz: OPTION
+  do
+    case ${OPTION} in
+      v)
+        echo "TODO: Enable verbosity"
+        ;;
+      z)
+        ACC_ZONE="${OPTARG}"
+        ;;
+      ?)
+        usage_stop
+        ;;
+    esac
+  done
+}
+
+function up_instances() {
+  get_up_arguments ${@}
+  shift "$(( OPTIND - 1 ))"
+
+  local CMD="${CMD_BASE} server stop $(get_instance_id_by_state stopped) zone=${ACC_ZONE}"
   $CMD
 }
 
@@ -277,15 +393,15 @@ case "${1}" in
     ;;
   up)
     shift
-    echo "TODO: ${0} up - starts up all containers."
+    up_instances ${@}
     ;;
   down)
     shift
-    echo "TODO: ${0} down - shuts down all containers."
+    down_instances ${@}
     ;;
   delete|remove)
     shift
-    # delete_instances ${@}
+    delete_instances ${@}
     ;;
   *)
     usage_general
