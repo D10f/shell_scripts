@@ -68,8 +68,9 @@ function usage_stop() {
 }
 
 function usage_delete() {
-  echo "Usage: ${0} delete [-v] [-z ACC_ZONE] [INS_ID | INS_NAME]..." >&2
+  echo "Usage: ${0} delete [-vf] [-z ACC_ZONE] [INS_ID | INS_NAME]..." >&2
   echo "  -z  ACC_ZONE  Server location of the specified instances."
+  echo "  -f            Forces instance to shutdown before deleting."
   echo "  -v            Increase verbosity."
   exit 1
 }
@@ -85,7 +86,7 @@ function get_instance_id_by_state() {
 
 
 function get_instance_id_by_name() {
-  REGEXP=$(echo ${@} | sed s/' '/\|/g)
+  local REGEXP=$(echo ${@} | sed s/' '/\|/g)
   local RUNNING_INSTANCES="${CMD_BASE} server list zone=${ACC_ZONE}"
   $RUNNING_INSTANCES | grep -Ei "(${REGEXP})" | awk '{print $1}' | (readarray -t ARRAY; IFS=' ' echo "${ARRAY[*]}")
 }
@@ -316,7 +317,6 @@ function get_down_arguments() {
 
 function down_instances() {
   get_down_arguments ${@}
-  shift "$(( OPTIND - 1 ))"
 
   local CMD="${CMD_BASE} server stop $(get_instance_id_by_state running) zone=${ACC_ZONE}"
   $CMD
@@ -346,7 +346,6 @@ function get_up_arguments() {
 
 function up_instances() {
   get_up_arguments ${@}
-  shift "$(( OPTIND - 1 ))"
 
   local CMD="${CMD_BASE} server stop $(get_instance_id_by_state stopped) zone=${ACC_ZONE}"
   $CMD
