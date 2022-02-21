@@ -12,6 +12,7 @@ CMD_BASE="docker run -it --rm -v ${HOME}/.config/scw:/root/.config/scw ${DCK_IMA
 # Checks if input to create new instances is greater than this value.
 NEW_INSTANCES=0
 MAX_INSTANCES=5
+FORCE_SHUTDOWN="false"
 
 
 ######## INIT ########
@@ -247,6 +248,52 @@ function start_instances() {
 }
 
 
+######## DELETE INSTANCES BY NAME OR ID ########
+
+
+function get_delete_arguments() {
+ while getopts vfz: OPTION
+  do
+    case ${OPTION} in
+      v)
+        echo "TODO: Enable verbosity"
+        ;;
+      z)
+        ACC_ZONE="${OPTARG}"
+        ;;
+      f)
+        FORCE_SHUTDOWN="true"
+        ;;
+      ?)
+        usage_stop
+        ;;
+    esac
+  done
+}
+
+
+function delete_instances() {
+  get_delete_arguments ${@}
+  shift "$(( OPTIND - 1 ))"
+
+  if [[ ! "${@}" ]]
+  then
+    echo "You must provide at least one instance name."
+    exit 1
+  fi
+
+  local CMD="${CMD_BASE} \
+  server \
+  delete \
+  with-ip=true \
+  force-shutdown=${FORCE_SHUTDOWN} \
+  zone=${ACC_ZONE} \
+  $(get_instance_id_by_name ${@})"
+
+  $CMD
+}
+
+
 ######## STOP ALL INSTANCES ########
 
 
@@ -296,51 +343,13 @@ function get_up_arguments() {
   done
 }
 
+
 function up_instances() {
   get_up_arguments ${@}
   shift "$(( OPTIND - 1 ))"
 
   local CMD="${CMD_BASE} server stop $(get_instance_id_by_state stopped) zone=${ACC_ZONE}"
   $CMD
-}
-
-
-######## DELETE INSTANCES ########
-
-
-function get_delete_arguments() {
-  while getopts vz: OPTION
-  do
-    case ${OPTION} in
-      v)
-        echo "TODO: Enable verbosity"
-        ;;
-      z)
-        ACC_ZONE="${OPTARG}"
-        ;;
-      ?)
-        usage_stop
-        ;;
-    esac
-  done
-}
-
-
-function delete_instances() {
-
-  get_delete_arguments ${@}
-
-  # START=1
-  # while [[ "${START}" -le "${INSTANCES_IDS}" ]]
-  # do
-  #   echo "Creating instance #${START}"
-  #   # local CMD="${CMD_BASE} server create type=${INS_TYPE} image=${INS_IMAGE} zone=${ACC_ZONE}"
-  #   # $CMD
-  #   (( START++ ))
-  # done
-
-  echo "you called the delete function!"
-  echo "${INSTANCES_IDS}"
 }
 
 
