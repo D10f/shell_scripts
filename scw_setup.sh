@@ -88,14 +88,14 @@ function usage_nic() {
 
 function get_instance_id_by_state() {
   local RUNNING_INSTANCES="${CMD_BASE} server list zone=${ACC_ZONE} state=${1}"
-  $RUNNING_INSTANCES | grep -v 'STATE' | awk '{print $1}' | (readarray -t ARRAY; IFS=' ' echo "${ARRAY[*]}")
+  $RUNNING_INSTANCES | grep -v 'STATE' | awk '{print $1}' | tr '\n' ' '
 }
 
 
 function get_instance_id_by_name() {
   local REGEXP=$(echo ${@} | sed s/' '/\|/g)
   local RUNNING_INSTANCES="${CMD_BASE} server list zone=${ACC_ZONE}"
-  $RUNNING_INSTANCES | grep -Ei "(${REGEXP})" | awk '{print $1}' | (readarray -t ARRAY; IFS=' ' echo "${ARRAY[*]}")
+  $RUNNING_INSTANCES | grep -Ei "(${REGEXP})" | awk '{print $1}' | tr '\n' ' '
 }
 
 
