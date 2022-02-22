@@ -25,7 +25,7 @@ then
 fi
 
 function usage_general() {
-  echo "Usage: ${0} [list | create | delete | up | down | start | stop] [options]..." >&2
+  echo "Usage: ${0} [list | create | delete | up | down | start | stop | nic] [options]..." >&2
   echo "Manage your account with this wrapper for the official SCW CLI tool."
   exit 1
 }
@@ -75,6 +75,13 @@ function usage_delete() {
   exit 1
 }
 
+function usage_nic() {
+  echo "Usage: ${0} nic [-v] [-z ACC_ZONE] [-n ACC_PNET] [SERVER_NAME]..." >&2
+  echo "  -z  ACC_ZONE  Server location of the specified instances."
+  echo "  -n  ACC_PNET  Private Network ID as provided by Scaleway."
+  echo "  -v            Increase verbosity."
+  exit 1
+}
 
 ######## UTILITIES ########
 
@@ -356,11 +363,11 @@ function up_instances() {
 
 
 function get_list_arguments() {
-  while getopts vi: OPTION
+  while getopts vz: OPTION
   do
     case ${OPTION} in
-      i)
-        echo "TEST PASSED"
+      z)
+        ACC_ZONE="${OPTARG}"
         ;;
       v)
         echo "Verbosity enabled"
@@ -379,6 +386,52 @@ function list_instances() {
 
   local CMD="${CMD_BASE} server list zone=${ACC_ZONE}"
   $CMD
+}
+
+
+######## CREATE NIC ON INSTANCE ########
+
+
+function get_nic_arguments() {
+  while getopts vn:z: OPTION
+  do
+    case ${OPTION} in
+      v)
+        echo "Verbosity enabled"
+        ;;
+      n)
+        ACC_PNET="${OPTARG}"
+        ;;
+      z)
+        ACC_ZONE="${OPTARG}"
+        ;;
+      ?)
+        usage_nic
+        ;;
+    esac
+  done
+}
+
+
+function create_nic() {
+
+  get_nic_arguments ${@}
+  shift "$(( OPTIND - 1 ))"
+
+  TOTAL_SERVERS="${#}"
+  SERVER_IDS="$(get_instance_id_by_name ${@})"
+
+  for SERVER_ID in ${SERVER_IDS}
+  do
+    local CMD="${CMD_BASE} \
+      private-nic \
+      create \
+      zone=${ACC_ZONE} \
+      private-network-id=${ACC_PNET} \
+      server-id=$(get_instance_id_by_name ${SERVER_ID})"
+  
+    $CMD
+  done
 }
 
 
@@ -410,6 +463,10 @@ case "${1}" in
   delete|remove)
     shift
     delete_instances ${@}
+    ;;
+  nic)
+    shift
+    create_nic ${@}
     ;;
   *)
     usage_general
