@@ -25,7 +25,7 @@ then
 fi
 
 function usage_general() {
-  echo "Usage: ${0} [list | create | delete | up | down | start | stop | nic] [options]..." >&2
+  echo "Usage: ${0} {list|create|delete|up|down|start|stop|nic} [options]..." >&2
   echo "Manage your account with this wrapper for the official SCW CLI tool."
   exit 1
 }
