@@ -40,8 +40,9 @@ function info() {
 ##
 function create_archive() {
   local ARCHIVE_NAME=$1
-  shift
-  tar -cjf "${ARCHIVE_NAME}" ${@} >/dev/null 2>&1
+  local SRC_DIR=$2
+  shift 2
+  tar -C "${SRC_DIR}" -cjf "${ARCHIVE_NAME}" ${@} >/dev/null 2>&1
 }
 
 
@@ -91,8 +92,10 @@ function archive_ssh_keys() {
   dir_exists $SSH_SRC_DIR
   ensure_dir_exists $SSH_BACKUP_DIR
 
+  local SSH_FILES=$(ls ${SSH_SRC_DIR})
+
   info "Archiving SSH keys in: ${SSH_BACKUP_DIR}"
-  create_archive $ARCHIVE_NAME $SSH_SRC_DIR
+  create_archive $ARCHIVE_NAME ${SSH_SRC_DIR} $SSH_FILES
 }
 
 
@@ -109,13 +112,13 @@ function archive_firefox_profiles() {
   file_exists $FF_PROFILES
   ensure_dir_exists $FF_BACKUP_DIR
 
-  PROFILE_FILES=$(cat ${FF_PROFILES} \
+  local PROFILE_FILES=$(cat ${FF_PROFILES} \
   | grep "Path=" \
   | grep -v "default-release" \
-  | sed "s|Path=|${FF_SRC_DIR}/|") # Prefixes filename to output absolute path
+  | cut -d '=' -f2)
 
   info "Archiving Firefox profiles in: ${FF_BACKUP_DIR}"
-  create_archive $ARCHIVE_NAME $PROFILE_FILES
+  create_archive $ARCHIVE_NAME $FF_SRC_DIR $PROFILE_FILES
 }
 
 
