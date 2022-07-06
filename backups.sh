@@ -6,6 +6,7 @@
 #   - [ ] Set variable verbosity levels
 #   - [ ] Support for multiple compression algorithms
 #   - [ ] Support for encryption
+#   - [ ] Proper use of "ls" to get file list
 
 #
 # GLOBAL VARIABLES
@@ -123,6 +124,24 @@ function archive_firefox_profiles() {
 
 
 #
+# creates an archive containing the neovim configuration files
+##
+function archive_neovim() {
+  local NVIM_SRC_DIR="${HOME}/.config/nvim"
+  local NVIM_BACKUP_DIR="${BACKUP_DIR}/nvim"
+  local ARCHIVE_NAME="${NVIM_BACKUP_DIR}/nvim_${CURRENT_DATE}.tar.bz2"
+  
+  dir_exists $NVIM_SRC_DIR
+  ensure_dir_exists $NVIM_BACKUP_DIR
+
+  local NVIM_FILES=$(ls ${NVIM_SRC_DIR})
+
+  info "Archiving nevovim configuration files in: ${NVIM_BACKUP_DIR}"
+  create_archive $ARCHIVE_NAME ${NVIM_SRC_DIR} $NVIM_FILES
+}
+
+
+#
 # updates permissions on all archive files found
 ##
 function update_permissions() {
@@ -140,6 +159,7 @@ function main() {
 
   archive_firefox_profiles
   archive_ssh_keys
+  archive_neovim
 
   info "Archive finished. Updating permissions..."
   
