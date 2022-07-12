@@ -142,6 +142,47 @@ function archive_neovim() {
 
 
 #
+## creates an archive with bash profile configuration files
+###
+function archive_bash_files() {
+  local BASH_BACKUP_DIR="${BACKUP_DIR}/bash"
+  local ARCHIVE_NAME="${BASH_BACKUP_DIR}/bash_${CURRENT_DATE}.tar.bz2"
+
+  ensure_dir_exists $BASH_BACKUP_DIR
+
+  local BASH_FILES=".bashrc .bash_aliases .bash_profile"
+
+  info "Archiving bash configuration files in: ${BASH_BACKUP_DIR}"
+  create_archive $ARCHIVE_NAME $HOME $BASH_FILES
+}
+
+#
+## creates insert description here
+###
+function archive_user_files() {
+  local FILES_BACKUP_DIR="${BACKUP_DIR}/user"
+  local BACKUP_DIRECTORIES="Documents Pictures Videos Public"
+
+  ensure_dir_exists $FILES_BACKUP_DIR
+  info "Archiving personal files..."
+
+  for dir in $BACKUP_DIRECTORIES; do
+    local DIR_BACKUP_DIR="${FILES_BACKUP_DIR}/${dir}"
+    local ARCHIVE_NAME="${DIR_BACKUP_DIR}/${dir}_${CURRENT_DATE}.tar.bz2"
+
+    ensure_dir_exists $DIR_BACKUP_DIR
+
+    local DIR_FILES=$(ls $HOME/$dir)
+
+    info "  ...Archiving ${dir} in ${DIR_BACKUP_DIR}"
+    
+
+    create_archive $ARCHIVE_NAME ${HOME}/${dir} $DIR_FILES
+  done
+}
+
+
+#
 # updates permissions on all archive files found
 ##
 function update_permissions() {
@@ -160,7 +201,10 @@ function main() {
   archive_firefox_profiles
   archive_ssh_keys
   archive_neovim
+  archive_bash_files
+  archive_user_files
 
+  info "-------------------------------------"
   info "Archive finished. Updating permissions..."
   
   update_permissions
