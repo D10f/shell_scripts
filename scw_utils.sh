@@ -25,7 +25,7 @@ then
 fi
 
 function usage_general() {
-  echo "Usage: ${0} {list|create|delete|up|down|start|stop|nic} [options]..." >&2
+  echo "Usage: ${0} {list|create|delete|init|up|down|start|stop|nic} [options]..." >&2
   echo "Manage your account with this wrapper for the official SCW CLI tool."
   exit 1
 }
@@ -467,6 +467,10 @@ case "${1}" in
   nic)
     shift
     create_nic ${@}
+    ;;
+  init)
+    shift
+    docker run -it --rm -v ${HOME}/.config/scw:/root/.config/scw ${DCK_IMAGE} init
     ;;
   *)
     usage_general
