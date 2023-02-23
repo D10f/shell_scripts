@@ -6,7 +6,7 @@ ACC_ZONE="nl-ams-1"
 ACC_PNET="ebde321f-bfab-473f-bbca-8904b995c76a"
 INS_TYPE="DEV1-S"
 INS_IMAGE="ubuntu_focal"
-DCK_IMAGE="scaleway/cli:v2.4.0"
+DCK_IMAGE="scaleway/cli:v2.11.1"
 CMD_BASE="docker run -it --rm -v ${HOME}/.config/scw:/root/.config/scw ${DCK_IMAGE} instance"
 
 # Checks if input to create new instances is greater than this value.
